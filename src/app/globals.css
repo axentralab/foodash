@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background-color: #F7F5F2;
+  color: #1A1825;
+  -webkit-font-smoothing: antialiased;
+  font-family: system-ui, sans-serif;
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #E8E8F0; border-radius: 99px; }
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white font-semibold px-6 py-3 rounded-2xl hover:bg-primary-dark active:scale-95 transition-all duration-200 shadow-primary disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply bg-transparent text-dark-100 font-semibold px-6 py-3 rounded-2xl hover:bg-gray-100 active:scale-95 transition-all duration-200 border border-gray-300;
+  }
+  .input-field {
+    @apply w-full bg-gray-50 border border-gray-300 rounded-2xl px-4 py-3.5 text-dark-100 placeholder-gray-400 outline-none focus:border-primary focus:ring-2 focus:ring-orange-100 transition-all duration-200;
+  }
+  .card { @apply bg-white rounded-3xl shadow-card p-5; }
+  .badge { @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full; }
+}
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .text-gradient {
+    background: linear-gradient(135deg, #FF6B35 0%, #FFD166 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
