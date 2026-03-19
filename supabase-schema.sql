@@ -141,3 +141,16 @@ ON CONFLICT (slug) DO NOTHING;
 
 -- Enable realtime for live order tracking
 ALTER PUBLICATION supabase_realtime ADD TABLE orders;
+
+-- =============================================
+-- LOYALTY POINTS RPC FUNCTION
+-- =============================================
+CREATE OR REPLACE FUNCTION increment_loyalty_points(user_id UUID, points INTEGER)
+RETURNS void AS $$
+BEGIN
+  UPDATE profiles
+  SET loyalty_points = loyalty_points + points,
+      updated_at = NOW()
+  WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
