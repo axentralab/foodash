@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍽️ FooDash — Full-Stack Food Ordering App
 
-## Getting Started
+Built with **Next.js 14 · Supabase · Stripe · Zustand · Tailwind CSS**
 
-First, run the development server:
+---
+
+## 🚀 Quick Start
 
 ```bash
+unzip foodash-final.zip && cd foodash-app
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Demo mode** works instantly — no Supabase or Stripe keys needed.
+- Demo login: `demo@foodash.com` / `demo1234`
+- Admin panel: `http://localhost:3000/admin`
+- Promo code: `FOODASH` ($5 off)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ✨ Features
 
-## Learn More
+### 👤 User App
+| Page | Route | Description |
+|---|---|---|
+| Sign In / Up | `/auth/sign-in` | Supabase Auth |
+| Menu | `/dashboard/menu` | 40 items, 12 categories, featured picks, offers |
+| Search | `/dashboard/search` | Real-time search + price/rating/sort filters |
+| Cart | `/dashboard/cart` | Add/remove, promo code, delivery address |
+| Payment | `/dashboard/cart` | Card, bKash/Nagad/Rocket, Cash on Delivery |
+| Orders | `/dashboard/orders` | Live tracking with animated progress + cancel |
+| Profile | `/dashboard/profile` | Edit info, loyalty points, settings |
 
-To learn more about Next.js, take a look at the following resources:
+### 🛠️ Admin Panel (`/admin`)
+| Page | Description |
+|---|---|
+| Dashboard | Stats overview, top-rated items |
+| Menu Management | **Add / Edit / Delete / Toggle** food items |
+| Orders | View all orders, update status |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 🔌 API Routes (Backend)
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/menu` | GET | Menu items with filters, sort, search |
+| `/api/categories` | GET | All categories |
+| `/api/orders` | GET / POST | User orders + place new order |
+| `/api/orders/[id]` | GET / PATCH | Single order + cancel |
+| `/api/profile` | GET / PATCH | User profile |
+| `/api/favorites` | GET / POST | Toggle favorites |
+| `/api/payment/create-intent` | POST | Stripe payment intent |
+| `/api/payment/webhook` | POST | Stripe webhook handler |
+| `/api/admin/menu` | GET / POST | Admin: list/create items |
+| `/api/admin/menu/[id]` | PATCH / DELETE | Admin: update/delete item |
+| `/api/auth/callback` | GET | OAuth callback |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## ⚙️ Environment Setup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+cp .env.local.example .env.local
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+# Supabase (supabase.com → Project Settings → API)
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Stripe (dashboard.stripe.com → Developers → API Keys)
+STRIPE_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+---
+
+## 🗄️ Supabase Setup
+
+1. Create project at [supabase.com](https://supabase.com)
+2. Run `supabase-schema.sql` in SQL Editor
+3. Add env vars
+
+**Tables:** `profiles` · `categories` · `menu_items` · `orders` · `order_items` · `favorites`
+
+**Features:** Row Level Security · Realtime on orders · Auto-create profile trigger · Loyalty points RPC
+
+---
+
+## 💳 Stripe Setup
+
+1. Create account at [stripe.com](https://stripe.com)
+2. Get test API keys from Dashboard → Developers
+3. For webhooks: `stripe listen --forward-to localhost:3000/api/payment/webhook`
+
+**Supported payments:** Credit/Debit Card · bKash · Nagad · Rocket · Cash on Delivery
+
+---
+
+## 🗂️ Project Structure
+
+```
+src/
+├── app/
+│   ├── admin/                  ← Admin panel
+│   │   ├── menu/page.tsx       ← Add/Edit/Delete food items
+│   │   └── orders/page.tsx     ← Manage all orders
+│   ├── api/                    ← Backend API routes
+│   │   ├── menu/               ← Menu CRUD
+│   │   ├── orders/             ← Orders + cancel
+│   │   ├── payment/            ← Stripe integration
+│   │   ├── admin/menu/         ← Admin-only CRUD
+│   │   └── profile/            ← User profile
+│   ├── auth/                   ← Sign in / Sign up
+│   └── dashboard/              ← Main user app
+├── components/
+│   ├── menu/MenuCard.tsx
+│   └── payment/PaymentForm.tsx ← Card + Mobile + Cash UI
+├── hooks/
+│   ├── useMenu.ts              ← API + mock fallback
+│   ├── useOrders.ts            ← Orders + place order
+│   ├── useProfile.ts           ← Profile + update
+│   └── useRealtime.ts          ← Supabase realtime
+├── lib/
+│   ├── actions/index.ts        ← Server Actions
+│   ├── mock-data.ts            ← 40 food items
+│   └── supabase/               ← Client + server
+├── middleware.ts               ← Auth protection
+├── store/cart.store.ts         ← Zustand (persisted)
+└── types/index.ts
+```

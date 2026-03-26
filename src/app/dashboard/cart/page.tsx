@@ -6,6 +6,7 @@ import { useCartStore } from "@/store/cart.store";
 import { usePlaceOrder } from "@/hooks/useOrders";
 import { CartItem } from "@/types";
 import { formatPrice, cn } from "@/lib/utils";
+import PaymentForm from "@/components/payment/PaymentForm";
 
 function CartItemRow({ item }: { item: CartItem }) {
   const { increaseQty, decreaseQty, removeItem } = useCartStore();
@@ -13,9 +14,9 @@ function CartItemRow({ item }: { item: CartItem }) {
   return (
     <div className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-card">
       <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-        {!imgErr ? (
-          <Image src={item.menu_item.image_url} alt={item.menu_item.name} fill className="object-cover" onError={()=>setImgErr(true)}/>
-        ) : <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>}
+        {!imgErr
+          ? <Image src={item.menu_item.image_url} alt={item.menu_item.name} fill className="object-cover" onError={()=>setImgErr(true)}/>
+          : <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>}
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-dark-100 text-sm leading-tight truncate">{item.menu_item.name}</h3>
@@ -36,13 +37,12 @@ function CartItemRow({ item }: { item: CartItem }) {
 
 export default function CartPage() {
   const { items, getTotalItems, getTotalPrice, clearCart } = useCartStore();
-  const { placeOrder, loading: ordering } = usePlaceOrder();
+  const { placeOrder } = usePlaceOrder();
   const [promo, setPromo] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState("");
-  const [address, setAddress] = useState("123 Main St, Narayanganj");
-  const [paymentMethod, setPaymentMethod] = useState("card");
-  const [ordered, setOrdered] = useState(false);
+  const [address, setAddress] = useState("123 Main St, Narayanganj 1400");
+  const [step, setStep] = useState<"cart" | "payment" | "done">("cart");
 
   const totalItems = getTotalItems();
   const subtotal = getTotalPrice();
@@ -52,29 +52,43 @@ export default function CartPage() {
 
   const applyPromo = () => {
     if (promo.toUpperCase() === "FOODASH") { setPromoApplied(true); setPromoError(""); }
-    else { setPromoError("Invalid promo code"); }
+    else setPromoError("Invalid promo code");
   };
 
-  const handleOrder = async () => {
-    const result = await placeOrder({
-      cartItems: items,
-      delivery_address: address,
-      payment_method: paymentMethod,
-      promo_code: promoApplied ? "FOODASH" : undefined,
-    });
-    if (result.success) { clearCart(); setOrdered(true); }
+  const handlePaymentSuccess = async () => {
+    await placeOrder({ cartItems: items, delivery_address: address, promo_code: promoApplied ? "FOODASH" : undefined });
+    clearCart();
+    setStep("done");
   };
 
-  if (ordered) {
+  if (step === "done") {
     return (
       <div className="min-h-full flex flex-col items-center justify-center p-10 text-center">
         <div className="text-8xl mb-6 animate-bounce">🎉</div>
-        <h2 className="text-2xl font-bold text-dark-100 mb-2">Order Placed!</h2>
-        <p className="text-gray-400 mb-8">Your food is being prepared. Track it in Orders.</p>
+        <h2 className="text-3xl font-bold text-dark-100 mb-2">Order Confirmed!</h2>
+        <p className="text-gray-400 mb-2">Payment successful. Your food is being prepared!</p>
+        <p className="text-gray-400 text-sm mb-8">Estimated delivery: ~40 minutes</p>
         <div className="flex gap-3">
-          <Link href="/dashboard/orders" className="btn-primary px-8 py-3">Track Order</Link>
+          <Link href="/dashboard/orders" className="btn-primary px-8 py-3">📦 Track Order</Link>
           <Link href="/dashboard/menu" className="btn-ghost px-8 py-3">Order More</Link>
         </div>
+      </div>
+    );
+  }
+
+  if (step === "payment") {
+    return (
+      <div className="min-h-full p-5 lg:p-10 max-w-lg mx-auto">
+        <button onClick={()=>setStep("cart")} className="flex items-center gap-2 text-gray-400 hover:text-dark-100 transition-colors mb-6 text-sm font-semibold">
+          ← Back to Cart
+        </button>
+        <h1 className="text-2xl font-bold text-dark-100 mb-6">Complete Payment</h1>
+        <PaymentForm
+          amount={total}
+          orderDetails={{ itemCount: totalItems, deliveryFee: delivery, discount }}
+          onSuccess={handlePaymentSuccess}
+          onCancel={()=>setStep("cart")}
+        />
       </div>
     );
   }
@@ -111,21 +125,7 @@ export default function CartPage() {
           <div className="bg-white rounded-3xl p-5 shadow-card">
             <h3 className="font-semibold text-dark-100 mb-3">📍 Delivery Address</h3>
             <textarea value={address} onChange={e=>setAddress(e.target.value)}
-              className="input-field text-sm resize-none" rows={2} placeholder="Enter your full delivery address"/>
-          </div>
-
-          {/* Payment method */}
-          <div className="bg-white rounded-3xl p-5 shadow-card">
-            <h3 className="font-semibold text-dark-100 mb-3">💳 Payment Method</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {[{id:"card",label:"💳 Card"},{id:"cash",label:"💵 Cash"},{id:"mobile",label:"📱 Mobile"}].map(m=>(
-                <button key={m.id} onClick={()=>setPaymentMethod(m.id)}
-                  className={cn("py-2.5 rounded-xl text-sm font-semibold border transition-all",
-                    paymentMethod===m.id?"bg-primary text-white border-primary":"bg-gray-50 text-gray-600 border-gray-200 hover:border-primary")}>
-                  {m.label}
-                </button>
-              ))}
-            </div>
+              className="input-field text-sm resize-none" rows={2} placeholder="Enter your delivery address"/>
           </div>
 
           {/* Promo */}
@@ -137,16 +137,16 @@ export default function CartPage() {
               <button onClick={applyPromo} disabled={promoApplied}
                 className={cn("px-4 py-2.5 rounded-xl font-semibold text-sm transition-all",
                   promoApplied?"bg-green-100 text-green-600 cursor-default":"bg-primary text-white hover:bg-primary-dark")}>
-                {promoApplied?"✓ Applied":"Apply"}
+                {promoApplied?"✓":"Apply"}
               </button>
             </div>
-            {promoError && <p className="text-red-500 text-xs mt-2">{promoError}</p>}
-            {promoApplied && <p className="text-green-600 text-xs mt-2">🎉 $5 discount applied!</p>}
+            {promoError&&<p className="text-red-500 text-xs mt-2">{promoError}</p>}
+            {promoApplied&&<p className="text-green-600 text-xs mt-2">🎉 $5 discount applied!</p>}
           </div>
 
-          {/* Summary */}
+          {/* Payment summary */}
           <div className="bg-white rounded-3xl p-5 shadow-card">
-            <h3 className="font-bold text-dark-100 text-lg mb-4">Payment Summary</h3>
+            <h3 className="font-bold text-dark-100 text-lg mb-4">Order Summary</h3>
             <div className="space-y-3">
               {[
                 {label:`Subtotal (${totalItems} items)`,val:formatPrice(subtotal)},
@@ -163,11 +163,12 @@ export default function CartPage() {
                 <span className="font-bold text-xl text-dark-100">{formatPrice(total)}</span>
               </div>
             </div>
-            <button onClick={handleOrder} disabled={ordering||!address.trim()}
-              className="btn-primary w-full flex items-center justify-center gap-2 mt-5 py-4">
-              {ordering?<span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>:"Place Order →"}
+
+            <button onClick={()=>setStep("payment")} disabled={!address.trim()}
+              className="btn-primary w-full flex items-center justify-center gap-2 mt-5 py-4 disabled:opacity-50">
+              💳 Proceed to Payment
             </button>
-            <p className="text-center text-xs text-gray-400 mt-3">🔒 Secure payment • Free cancellation within 5 min</p>
+            <p className="text-center text-xs text-gray-400 mt-3">🔒 Secured by SSL • Card, Mobile Pay & Cash accepted</p>
           </div>
         </div>
       </div>
